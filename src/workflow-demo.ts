@@ -1,21 +1,20 @@
 import { NestFactory } from '@nestjs/core';
 
 import { createWorkingWorkflow, createFailedWorkflow, createSkippedWorkflow } from './example-file';
-import { SimpleWorkflowEngineService } from './workflow/workflow-engine.service';
+import { WorkflowEngineService } from './workflow/workflow-engine.service';
 import { TaskEventType } from './workflow/dto/task.enum';
 import { AppModule } from './app.module';
 
-
 async function demonstrateWorkflowScenarios() {
   const app = await NestFactory.createApplicationContext(AppModule);
-  const simpleWorkflowEngine = app.get(SimpleWorkflowEngineService);
+  const workflowEngine = app.get(WorkflowEngineService);
 
   console.log('Scenario 1: Working Workflow (All tasks succeed)');
   
   const workingConfig = createWorkingWorkflow();
   const { workflow: workingWorkflow } = workingConfig;
 
-  simpleWorkflowEngine.on('taskEvent', (event) => {
+  workflowEngine.on('taskEvent', (event) => {
     switch (event.type) {
       case TaskEventType.TASK_STARTED:
         console.log(`${event.taskId} started (attempt ${event.attempt})`);
@@ -33,16 +32,17 @@ async function demonstrateWorkflowScenarios() {
   });
 
   try {
-    const workingResult = await simpleWorkflowEngine.run(workingWorkflow);
-    console.log(`Working Workflow Results:`);
+    const workingResult = await workflowEngine.run(workingWorkflow);
+    console.log(`\n-------------------------------------------------\nWorking Workflow Results:`);
     console.log(`Status: ${workingResult.status}`);
     console.log(`Duration: ${workingResult.duration}ms`);
     console.log(`Completed: ${workingResult.completedTasks}/${workingResult.totalTasks}`);
     console.log(`Failed: ${workingResult.failedTasks}`);
+    console.log(`Skipped: ${Object.keys(workingResult.tasks).length - workingResult.completedTasks - workingResult.failedTasks}`);
 
-    const completedTasks = Object.keys(workingResult.tasks).filter(id => workingResult.tasks[id].status === 'COMPLETED');
-    const failedTasks = Object.keys(workingResult.tasks).filter(id => workingResult.tasks[id].status === 'FAILED');
-    const skippedTasks = Object.keys(workingResult.tasks).filter(id => workingResult.tasks[id].status === 'SKIPPED');
+    const completedTasks = Object.keys(workingResult.tasks).filter(id => workingResult.tasks[id]?.status === 'COMPLETED');
+    const failedTasks = Object.keys(workingResult.tasks).filter(id => workingResult.tasks[id]?.status === 'FAILED');
+    const skippedTasks = Object.keys(workingResult.tasks).filter(id => workingResult.tasks[id]?.status === 'SKIPPED');
 
     if (completedTasks.length > 0) {
       console.log(`COMPLETED: {${completedTasks.join(', ')}}`);
@@ -56,14 +56,15 @@ async function demonstrateWorkflowScenarios() {
 
     console.log('\n\n');
   } catch (error) {
-    console.error('Working workflow failed:', error.message);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error('Working workflow failed:', errorMessage);
   }
   
   console.log('Scenario 2: Failed Workflow (Tasks fail with retries)');
 
-  simpleWorkflowEngine.removeAllListeners('taskEvent');
+  workflowEngine.removeAllListeners('taskEvent');
 
-  simpleWorkflowEngine.on('taskEvent', (event) => {
+  workflowEngine.on('taskEvent', (event) => {
     switch (event.type) {
       case TaskEventType.TASK_STARTED:
         console.log(`${event.taskId} started (attempt ${event.attempt})`);
@@ -84,16 +85,17 @@ async function demonstrateWorkflowScenarios() {
   const { workflow: failedWorkflow } = failedConfig;
 
   try {
-    const failedResult = await simpleWorkflowEngine.run(failedWorkflow);
-    console.log(`Failed Workflow Results:`);
+    const failedResult = await workflowEngine.run(failedWorkflow);
+    console.log(`\n-------------------------------------------------\nFailed Workflow Results:`);
     console.log(`Status: ${failedResult.status}`);
     console.log(`Duration: ${failedResult.duration}ms`);
     console.log(`Completed: ${failedResult.completedTasks}/${failedResult.totalTasks}`);
     console.log(`Failed: ${failedResult.failedTasks}`);
+    console.log(`Skipped: ${Object.keys(failedResult.tasks).length - failedResult.completedTasks - failedResult.failedTasks}`);
 
-    const completedTasks = Object.keys(failedResult.tasks).filter(id => failedResult.tasks[id].status === 'COMPLETED');
-    const failedTasks = Object.keys(failedResult.tasks).filter(id => failedResult.tasks[id].status === 'FAILED');
-    const skippedTasks = Object.keys(failedResult.tasks).filter(id => failedResult.tasks[id].status === 'SKIPPED');
+    const completedTasks = Object.keys(failedResult.tasks).filter(id => failedResult.tasks[id]?.status === 'COMPLETED');
+    const failedTasks = Object.keys(failedResult.tasks).filter(id => failedResult.tasks[id]?.status === 'FAILED');
+    const skippedTasks = Object.keys(failedResult.tasks).filter(id => failedResult.tasks[id]?.status === 'SKIPPED');
 
     if (completedTasks.length > 0) {
       console.log(`COMPLETED: {${completedTasks.join(', ')}}`);
@@ -106,14 +108,15 @@ async function demonstrateWorkflowScenarios() {
     }
     console.log('\n\n');
   } catch (error) {
-    console.error('Failed workflow failed:', error.message);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error('Failed workflow failed:', errorMessage);
   }
 
   console.log('Scenario 3: Skipped Workflow (Dependency failures)');
 
-  simpleWorkflowEngine.removeAllListeners('taskEvent');
+  workflowEngine.removeAllListeners('taskEvent');
 
-  simpleWorkflowEngine.on('taskEvent', (event) => {
+  workflowEngine.on('taskEvent', (event) => {
     switch (event.type) {
       case TaskEventType.TASK_STARTED:
         console.log(`${event.taskId} started (attempt ${event.attempt})`);
@@ -134,16 +137,17 @@ async function demonstrateWorkflowScenarios() {
   const { workflow: skippedWorkflow } = skippedConfig;
 
   try {
-    const skippedResult = await simpleWorkflowEngine.run(skippedWorkflow);
-    console.log(`Skipped Workflow Results:`);
+    const skippedResult = await workflowEngine.run(skippedWorkflow);
+    console.log(`\n-------------------------------------------------\nSkipped Workflow Results:`);
     console.log(`Status: ${skippedResult.status}`);
     console.log(`Duration: ${skippedResult.duration}ms`);
     console.log(`Completed: ${skippedResult.completedTasks}/${skippedResult.totalTasks}`);
     console.log(`Failed: ${skippedResult.failedTasks}`);
+    console.log(`Skipped: ${Object.keys(skippedResult.tasks).length - skippedResult.completedTasks - skippedResult.failedTasks}`);
 
-    const completedTasks = Object.keys(skippedResult.tasks).filter(id => skippedResult.tasks[id].status === 'COMPLETED');
-    const failedTasks = Object.keys(skippedResult.tasks).filter(id => skippedResult.tasks[id].status === 'FAILED');
-    const skippedTasks = Object.keys(skippedResult.tasks).filter(id => skippedResult.tasks[id].status === 'SKIPPED');
+    const completedTasks = Object.keys(skippedResult.tasks).filter(id => skippedResult.tasks[id]?.status === 'COMPLETED');
+    const failedTasks = Object.keys(skippedResult.tasks).filter(id => skippedResult.tasks[id]?.status === 'FAILED');
+    const skippedTasks = Object.keys(skippedResult.tasks).filter(id => skippedResult.tasks[id]?.status === 'SKIPPED');
 
     if (completedTasks.length > 0) {
       console.log(`COMPLETED: {${completedTasks.join(', ')}}`);
@@ -155,7 +159,8 @@ async function demonstrateWorkflowScenarios() {
       console.log(`SKIPPED: {${skippedTasks.join(', ')}}`);
     }
   } catch (error) {
-    console.error('Skipped workflow failed:', error.message);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error('Skipped workflow failed:', errorMessage);
   }
   await app.close();
 }

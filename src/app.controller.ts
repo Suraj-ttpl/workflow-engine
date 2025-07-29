@@ -1,15 +1,46 @@
-import { Controller, Post, Body } from '@nestjs/common';
-import { SimpleWorkflowEngineService } from './workflow/workflow-engine.service';
-import { Task } from './workflow/dto/task.interface';
+import { Controller, Get, Post } from '@nestjs/common';
+import { WorkflowEngineService } from './workflow/workflow-engine.service';
 
-@Controller('workflow')
+@Controller()
 export class AppController {
-  constructor(
-    private readonly simpleWorkflowEngineService: SimpleWorkflowEngineService
-  ) {}
+  constructor(private readonly workflowEngine: WorkflowEngineService) {}
 
-  @Post('run')
-  async runWorkflow(@Body() workflow: Task[]) {
-      return await this.simpleWorkflowEngineService.run(workflow);
+  @Get()
+  getHello(): string {
+    return 'Workflow Engine API';
+  }
+
+  @Post('workflow')
+  async runWorkflow(): Promise<object> {
+    const workflow = [
+      {
+        id: 'task1',
+        handler: async () => {
+          await new Promise(resolve => setTimeout(resolve, 100));
+          return { result: 'Task 1 completed' };
+        },
+        retries: 2,
+        timeoutMs: 5000
+      },
+      {
+        id: 'task2',
+        dependencies: ['task1'],
+        handler: async () => {
+          await new Promise(resolve => setTimeout(resolve, 100));
+          return { result: 'Task 2 completed' };
+        },
+        retries: 1,
+        timeoutMs: 3000
+      }
+    ];
+
+    const result = await this.workflowEngine.run(workflow);
+    return {
+      status: result.status,
+      duration: result.duration,
+      completedTasks: result.completedTasks,
+      failedTasks: result.failedTasks,
+      totalTasks: result.totalTasks
+    };
   }
 } 

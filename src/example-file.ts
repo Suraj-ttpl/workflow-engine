@@ -1,8 +1,17 @@
 import { v4 as uuidv4 } from 'uuid';
+import { 
+  FetchedData, 
+  UserRecord, 
+  JsonPlaceholderUser,
+  FetchResponse,
+  StoreResponse,
+  FetchRecordResponse,
+  UpdateRecordResponse
+} from './workflow/dto/data.interface';
 
 export function createWorkingWorkflow() {
-  const dataStore: any[] = [];
-  let fetchedData: any = null;
+  const dataStore: UserRecord[] = [];
+  let fetchedData: FetchedData = null;
   let recordIds: string[] = [];
 
   return {
@@ -20,13 +29,14 @@ export function createWorkingWorkflow() {
             throw new Error(`Failed to fetch data: ${response.status}`);
           }
           
-          fetchedData = await response.json();
+          const apiData = await response.json() as JsonPlaceholderUser[];
+          fetchedData = apiData;
           console.log('Fetched data count:', fetchedData.length);
           
           return Promise.resolve({ 
             valid: true, 
             count: fetchedData.length
-          });
+          } as FetchResponse);
         },
         retries: 2,
         timeoutMs: 5000
@@ -41,22 +51,22 @@ export function createWorkingWorkflow() {
             throw new Error('No valid data available to store');
           }
           
-          const recordsWithIds = fetchedData.map((user) => ({
+          const recordsWithIds = (fetchedData as JsonPlaceholderUser[]).map((user: JsonPlaceholderUser) => ({
             ...user,
             recordId: uuidv4(),
             createdAt: new Date().toISOString(),
-            status: 'active'
+            status: 'active' as const
           }));
           
           dataStore.push(...recordsWithIds);
-          recordIds = recordsWithIds.map(record => record.recordId);
+          recordIds = recordsWithIds.map((record: UserRecord) => record.recordId);
           
           console.log('Total records in store:', dataStore.length);
           
           return Promise.resolve({ 
             count: recordIds.length,
             storedAt: new Date().toISOString()
-          });
+          } as StoreResponse);
         },
         retries: 1,
         timeoutMs: 2000
@@ -77,7 +87,7 @@ export function createWorkingWorkflow() {
           
           console.log('Found record:', foundRecord.recordId);
           
-          const updatedRecord = {
+          const updatedRecord: UserRecord = {
             ...foundRecord,
             fetchedAt: new Date().toISOString(),
             status: 'fetched'
@@ -93,7 +103,7 @@ export function createWorkingWorkflow() {
           return Promise.resolve({ 
             fetched: true,
             recordData: updatedRecord
-          });
+          } as FetchRecordResponse);
         },
         retries: 2,
         timeoutMs: 3000
@@ -113,7 +123,7 @@ export function createWorkingWorkflow() {
             throw new Error(`No records found for IDs: ${recordIds.join(', ')}`);
           }
           
-          const updatedRecord = {
+          const updatedRecord: UserRecord = {
             ...recordToUpdate,
             updatedAt: new Date().toISOString(),
             status: 'updated'
@@ -131,7 +141,7 @@ export function createWorkingWorkflow() {
             updated: true, 
             updatedRecord: updatedRecord,
             updatedAt: new Date().toISOString()
-          });
+          } as UpdateRecordResponse);
         },
         retries: 3,
         timeoutMs: 2000
@@ -141,8 +151,8 @@ export function createWorkingWorkflow() {
 }
 
 export function createFailedWorkflow() {
-  const dataStore: any[] = [];
-  let fetchedData: any = null;
+  const dataStore: UserRecord[] = [];
+  let fetchedData: FetchedData = null;
   let recordIds: string[] = [];
   let attemptCount = 0;
   let fetchAttemptCount = 0;
@@ -168,13 +178,14 @@ export function createFailedWorkflow() {
             throw new Error(`Failed to fetch data: ${response.status}`);
           }
           
-          fetchedData = await response.json();
+          const apiData = await response.json() as JsonPlaceholderUser[];
+          fetchedData = apiData;
           console.log('Fetched data count:', fetchedData.length);
           
           return Promise.resolve({ 
             valid: true, 
             count: fetchedData.length
-          });
+          } as FetchResponse);
         },
         retries: 2,
         timeoutMs: 5000
@@ -195,22 +206,22 @@ export function createFailedWorkflow() {
             throw new Error('connection failed - retrying');
           }
           
-          const recordsWithIds = fetchedData.map((user) => ({
+          const recordsWithIds = (fetchedData as JsonPlaceholderUser[]).map((user: JsonPlaceholderUser) => ({
             ...user,
             recordId: uuidv4(),
             createdAt: new Date().toISOString(),
-            status: 'active'
+            status: 'active' as const
           }));
           
           dataStore.push(...recordsWithIds);
-          recordIds = recordsWithIds.map(record => record.recordId);
+          recordIds = recordsWithIds.map((record: UserRecord) => record.recordId);
           
           console.log('Total records in store:', dataStore.length);
           
           return Promise.resolve({ 
             count: recordIds.length,
             storedAt: new Date().toISOString()
-          });
+          } as StoreResponse);
         },
         retries: 1,
         timeoutMs: 2000
@@ -236,7 +247,7 @@ export function createFailedWorkflow() {
           
           console.log('Found record:', foundRecord.recordId);
           
-          const updatedRecord = {
+          const updatedRecord: UserRecord = {
             ...foundRecord,
             fetchedAt: new Date().toISOString(),
             status: 'fetched'
@@ -252,7 +263,7 @@ export function createFailedWorkflow() {
           return Promise.resolve({ 
             fetched: true,
             recordData: updatedRecord
-          });
+          } as FetchRecordResponse);
         },
         retries: 2,
         timeoutMs: 1500
@@ -278,8 +289,8 @@ export function createFailedWorkflow() {
 }
 
 export function createSkippedWorkflow() {
-  const dataStore: any[] = [];
-  let fetchedData: any = null;
+  const dataStore: UserRecord[] = [];
+  let fetchedData: FetchedData = null;
   let recordIds: string[] = [];
 
   return {
@@ -308,22 +319,22 @@ export function createSkippedWorkflow() {
             throw new Error('No valid data available to store');
           }
           
-          const recordsWithIds = fetchedData.map((user) => ({
+          const recordsWithIds = (fetchedData as JsonPlaceholderUser[]).map((user: JsonPlaceholderUser) => ({
             ...user,
             recordId: uuidv4(),
             createdAt: new Date().toISOString(),
-            status: 'active'
+            status: 'active' as const
           }));
           
           dataStore.push(...recordsWithIds);
-          recordIds = recordsWithIds.map(record => record.recordId);
+          recordIds = recordsWithIds.map((record: UserRecord) => record.recordId);
           
           console.log('Total records in store:', dataStore.length);
           
           return Promise.resolve({ 
             count: recordIds.length,
             storedAt: new Date().toISOString()
-          });
+          } as StoreResponse);
         },
         retries: 1,
         timeoutMs: 2000
@@ -344,7 +355,7 @@ export function createSkippedWorkflow() {
           
           console.log('Found record:', foundRecord.recordId);
           
-          const updatedRecord = {
+          const updatedRecord: UserRecord = {
             ...foundRecord,
             fetchedAt: new Date().toISOString(),
             status: 'fetched'
@@ -360,7 +371,7 @@ export function createSkippedWorkflow() {
           return Promise.resolve({ 
             fetched: true,
             recordData: updatedRecord
-          });
+          } as FetchRecordResponse);
         },
         retries: 2,
         timeoutMs: 3000
@@ -380,7 +391,7 @@ export function createSkippedWorkflow() {
             throw new Error(`No records found for IDs: ${recordIds.join(', ')}`);
           }
           
-          const updatedRecord = {
+          const updatedRecord: UserRecord = {
             ...recordToUpdate,
             updatedAt: new Date().toISOString(),
             status: 'updated'
@@ -398,7 +409,7 @@ export function createSkippedWorkflow() {
             updated: true, 
             updatedRecord: updatedRecord,
             updatedAt: new Date().toISOString()
-          });
+          } as UpdateRecordResponse);
         },
         retries: 3,
         timeoutMs: 2000

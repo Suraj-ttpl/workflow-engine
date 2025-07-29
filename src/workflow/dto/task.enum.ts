@@ -6,10 +6,10 @@ export enum TaskEventType {
 }
 
 export interface TaskEvent {
-  type: TaskEventType;
-  taskId: string;
-  timestamp: Date;
-  attempt?: number;
-  error?: string;
-  result?: any;
+  readonly type: TaskEventType;
+  readonly taskId: string;
+  readonly timestamp: Date;
+  readonly attempt?: number;
+  readonly error?: string;
+  readonly result?: unknown;
 }
